@@ -1,5 +1,9 @@
 "use client";
 
+import {
+    getPlayerNameFromLocalStorage,
+    setPlayerNameInLocalStorage,
+} from "@/utils/localStorageUtils";
 import { useEffect, useState } from "react";
 
 import { BACKEND_API_BASE_URL } from "@/constants";
@@ -10,7 +14,7 @@ import { useRouter, useParams } from "next/navigation";
 
 export default function JoinGame() {
     const params = useParams();
-    const id = params?.id;
+    const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
     const router = useRouter();
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [isLoading, setLoading] = useState(true);
@@ -25,13 +29,18 @@ export default function JoinGame() {
                 return response.json();
             })
             .then((data) => {
+                const savedPlayerName = getPlayerNameFromLocalStorage(data.id);
+                if (data.player2 || savedPlayerName) {
+                    router.push(`/games/${data.id}`);
+                    return;
+                }
                 setGameData(data);
                 setLoading(false);
             })
             .catch((err) => {
                 console.log("Something went wrong", err);
             });
-    }, [id]);
+    }, [id, router]);
 
     if (!id) return <div className="text-black">invalid game id</div>;
     if (isLoading) return <div className="text-black">loading...</div>;
@@ -50,6 +59,7 @@ export default function JoinGame() {
                 return response.json();
             })
             .then((data) => {
+                setPlayerNameInLocalStorage(data.id, playerName);
                 router.push(`/games/${data.id}`);
             })
             .catch((err) => {
@@ -59,12 +69,12 @@ export default function JoinGame() {
 
     return (
         <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
-            <div className="text-center text-gray-600 sm:mx-auto sm:w-full sm:max-w-sm">
+            <div className="text-center text-gray-600 dark:text-slate-200 sm:mx-auto sm:w-full sm:max-w-sm">
                 <h2 className="mt-10 text-2xl font-bold leading-9 tracking-tight ">
                     Join Game
                 </h2>
                 <h6 className="mt-1 text-lg leading-9 tracking-tight">
-                    <span className="text-cyan-500">
+                    <span className="text-cyan-500 dark:text-purple-400">
                         {gameData?.player1}{" "}
                     </span>
                     challenged your skills in Connect4.
